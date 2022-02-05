@@ -29,12 +29,10 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-locations={}
-#y = json.dumps(locations)
-#print(y)
+
 
 #Create a new file for json Values
-f = open("values.txt", "w")
+f = open("values.txt", "r+")
 
 
 
@@ -44,16 +42,13 @@ def index():
     return render_template("index.html")
 
 
-
-
-
-
+@app.route('/', methods=["GET", "POST"])
 def ping_add(data):
     """Add ping data to json file and return it"""
     if request.method == "POST":
 
         #read the json file
-        with open(f"values.txt", "r") as f:
+        with open("values.txt", "r+") as f:
             obj = json.load(f)
 
         #add item to list 
@@ -63,10 +58,11 @@ def ping_add(data):
         return jsonify(f)
 
 
+@app.route('/', methods=["GET", "POST"])
 def ping_disable(ping_id):
     """disable ping with this id"""
     if request.method == "POST":    
-        with open(f"values.txt", "r") as f:
+        with open(f"values.txt", "r+") as f:
             obj1 = json.load(f)
         # Iterate through the objects in the JSON and change                     
         #the obj once we find it.
@@ -86,10 +82,11 @@ def ping_disable(ping_id):
         f = open("values.txt", "w").write(json.dumps(obj))
         return jsonify(f)
 
+@app.route('/', methods=["GET", "POST"])
 def get_pings():
     "return stringified data jason data"
     if request.method == "GET":
-        return jsonify(f)
+        return jsonify("values.txt")
 
 f.close()
 
