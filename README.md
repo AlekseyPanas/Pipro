@@ -4,6 +4,8 @@ Pipes
 First set up and run the server
 ```sh
 $ project-direcrory> cd server
+$ Sim> pip3 install flask
+$ Sim> pip3 install flask-session
 $ server> flask run
 ```
 
