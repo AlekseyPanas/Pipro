@@ -8,7 +8,7 @@ import {
 
 const WIDTH = 500;
 const HEIGHT = 500;
-const SCALING_CONSTANT = 20;
+const SCALING_CONSTANT = 50;
 const COORDINATE_ADJUST = 247;
 
 const RoomBlueprint = () => {

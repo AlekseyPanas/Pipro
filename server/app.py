@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, flash, redirect, render_template, request, session, jsonify
+from flask import Flask, flash, redirect, render_template, request, session, jsonify, Response
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
@@ -47,15 +47,16 @@ def index():
     return render_template("index.html")
 
 
-@app.route('/ping-data', methods=["GET", "POST"])
-def ping_add(data: list):
+@app.route('/ping-add', methods=["GET", "POST"])
+def ping_add():#data: dict):
     """Add ping data to json file and return it"""
+    print(request.json)
     if request.method == "POST":
 
         #first find id 
         count=1+len(ping_dict["ping"])
         #create the json object to be added
-        temp={"id": count, "location": data, "active": True}
+        temp={"id": count, "location": request.json["location"], "active": True}
         ping_dict["ping"].append(temp)
 
         return ping_dict
@@ -64,6 +65,7 @@ def ping_add(data: list):
 
 @app.route('/ping-data', methods=["GET", "POST"])
 def ping_disable(ping_id):
+    print(ping_id)
     """disable ping with this id"""
     if request.method == "POST":    
         for item in ping_dict["ping"]:
@@ -77,7 +79,10 @@ def get_pings():
     if request.method == "GET":
         # return jsonify("values.txt")
         #return {"tetsing":"test"}
-        return ping_dict
+        print(ping_dict)
+        resp = jsonify(ping_dict)
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
 
 
 

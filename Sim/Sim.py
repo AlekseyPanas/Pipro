@@ -17,7 +17,7 @@ class Sim:
     AIR_DENSITY = 1.2  # kg/m^3  TODO: NOT WORKING, FIX AIR DRAG
     AIR_MULT = 0.995  # Temporary air friction multiplier for speed of drone
 
-    POST_URL = "localhost:80/send_ping"
+    POST_URL = "http://127.0.0.1:5000/ping-add"
 
     def __init__(self, walls: list[Vector], pipes: list[Vector], drone_start: Point):
         self.drone = Drone(drone_start)
@@ -28,9 +28,6 @@ class Sim:
         self.responses = []
         # Tracks leaks already notified, to prevent spam notification
         self.notified_leaks = []
-
-        self.count = 0
-        self.requests_started = 0
 
     def update(self, time_delta: float) -> None:
         # Compute drone physics / logic
@@ -44,9 +41,9 @@ class Sim:
         for leak in self.leaks:
             leak.update(self, time_delta)
 
-        print("Res count:", len(self.responses))
-        print("Detect count:", self.count)
-        print("Reqs started:", self.requests_started)
+        #print("Res count:", len(self.responses))
+        #print("Detect count:", self.count)
+        #print("Reqs started:", self.requests_started)
 
     @staticmethod
     def air_drag(speed: float, drag_coeff: float, cross_section_area: float):
@@ -59,18 +56,19 @@ class Sim:
     def detect_gas(self, leak_source: Leak):
         """This function is called as a callback from leak emitters
         when gas is detected and sends a notification request to server"""
-        self.count += 1
         if leak_source not in self.notified_leaks:
             self.notified_leaks.append(leak_source)
-            self.requests_started += 1
-            threading.Thread(target=self.notify_server, args=([leak_source.emitter_loc.x,
-                                                               leak_source.emitter_loc.y])).start()
+            param = [leak_source.emitter_loc.x, leak_source.emitter_loc.y]
+            threading.Thread(target=self.notify_server, args=(param,)).start()
 
     def notify_server(self, leak_pos: list[float]) -> None:
         """Notify server of leak!"""
-        self.requests_started += 1
-        res = requests.post(Sim.POST_URL, {"location": leak_pos})
+        print("test thread ran!")
+        print("I am the arg:", leak_pos)
+        res = requests.post(Sim.POST_URL, json={"location": leak_pos})
+        print(res)
         self.responses.append(res)
+
 
 
 @dataclass
@@ -122,17 +120,17 @@ class Drone:
         # Computes drag force
         air_drag_force = Sim.air_drag(vel_mag, Drone.DRAG_COEFFICIENT, self.radius / 4)
 
-        print("vel", self.velocity)
-        print(vel_vec)
-        print(air_drag_force)
-        print("direction", vel_vec.get_direction())
+        #print("vel", self.velocity)
+        #print(vel_vec)
+        #print(air_drag_force)
+        #print("direction", vel_vec.get_direction())
 
         i = vector_from_magnitude_direction(
             Point(0.0, 0.0),
             vel_vec.get_direction() + math.pi,
             air_drag_force).end
 
-        print(i)
+        #print(i)
 
         # Add drag as point relative to center pos
         self.forces.append(
@@ -143,14 +141,14 @@ class Drone:
 
     def _compute_net_force(self, sim: Sim) -> None:
         """Compute net force"""
-        print("Forces:", self.forces)
+        #print("Forces:", self.forces)
         self.net_force = Point(0.0, 0.0)
 
         # Use point addition to add forces together
         for force in self.forces:
             self.net_force += force
 
-        print("Net Force:", self.net_force)
+        #print("Net Force:", self.net_force)
 
     def _perform_motion(self, sim: Sim, time_delta: float) -> None:
         """Perform drone motion and resolve any collisions"""
@@ -158,14 +156,14 @@ class Drone:
         self.accel = Point(self.net_force.x / self.mass,
                            self.net_force.y / self.mass)
 
-        print("Accel:", self.accel)
+        #print("Accel:", self.accel)
         # Find position change at constant acceleration
         delta_pos = Point(
             constant_acceleration_position(self.velocity.x, self.accel.x, time_delta),
             constant_acceleration_position(self.velocity.y, self.accel.y, time_delta)
         )
 
-        print("Pos delta:", delta_pos)
+        #print("Pos delta:", delta_pos)
         # Checks collisions
         collision_wall = None
         for w in sim.walls:
@@ -185,7 +183,7 @@ class Drone:
             # Resolve collision
             self._resolve_wall_collision(collision_wall)
 
-        print("New Vel:", self.velocity)
+        #print("New Vel:", self.velocity)
 
     def _resolve_wall_collision(self, wall: Wall):
         """Apply changes to kinematic quantities post-collision"""
@@ -193,7 +191,7 @@ class Drone:
 
     def update(self, sim: Sim, time_delta: float) -> None:
         """Update drone forces and other physical properties. Resolve collisions"""
-        print("\n" * 20)
+        #print("\n" * 20)
         #self._add_drag()
         self._compute_net_force(sim)
         self.forces = []
@@ -205,7 +203,7 @@ class Pipe:
     """Pipes that can leak"""
     vec: Vector
 
-    LEAK_PROB_PER_HOUR = 0.99
+    LEAK_PROB_PER_HOUR = 0.999
 
     def __init__(self, vec: Vector):
         self.vec = vec
@@ -213,9 +211,9 @@ class Pipe:
     def update(self, sim: Sim, time_delta: float) -> list[Leak]:
         """Return leaks that occurred, if any"""
         prob = scale_probability(Pipe.LEAK_PROB_PER_HOUR, 60, time_delta, 10)
-        print("Leak Probability", prob)
+        #print("Leak Probability", prob)
         roll_result = roll_probability(prob)
-        print("Roll Result", roll_result)
+        #print("Roll Result", roll_result)
         if roll_result:
             return [Leak(point_along_vector(self.vec, random.random()))]
         return []
@@ -254,8 +252,8 @@ class Leak:
                 random.random() * self.speed_multiplier * random.choice([-1, 1]),
                 random.random() * self.speed_multiplier * random.choice([-1, 1])
             ), 0.0])
-        print("Particle Prob:", prob)
-        print("Particle Roll:", roll)
+        #print("Particle Prob:", prob)
+        #print("Particle Roll:", roll)
 
         trash = []
         # Move particles

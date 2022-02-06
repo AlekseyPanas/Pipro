@@ -10,11 +10,26 @@ const pingCoordinates = async () => {
     .get("http://127.0.0.1:5000/data", {
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
+        Accept: "application/json"
       },
     })
     .then((response) => {
-      console.log(response);
+      console.log(response)
+      for (let i = 0; i < response.data.ping.length; i++) {
+        if (pingData.ping.map((i) => {return i.id}).includes(response.data.ping[i].id)) {
+          console.log("PING ALREADY ADDED");
+        } else {
+          console.log("PING NOT ADDED, ADDING");
+          pingData.ping.push({
+            active: response.data.ping[i].active,
+            id: response.data.ping[i].id,
+            location: [response.data.ping[i].location[0], -response.data.ping[i].location[1]]
+          })
+        }
+      }
+
+
+      // active: true, id: 1, location: [-0.8200934540456766, 1.8]}
     });
 
   // CREATES PING OBJECT AND ADDS TO ARRAY
